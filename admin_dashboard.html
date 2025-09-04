@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard - Car Rental Management System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+  </nav>
+
+  <div class="container">
+    <h2>Admin Dashboard</h2>
+
+    <h3>Cars List</h3>
+    <table id="carsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Model</th>
+          <th>Rate ($/day)</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Add New Car</h3>
+    <form id="addCarForm">
+      <input type="text" id="newCarModel" placeholder="Car Model" required />
+      <input type="number" id="newCarRate" placeholder="Rental Rate per Day" min="1" required />
+      <button type="submit">Add Car</button>
+    </form>
+
+    <h3>Rented Cars</h3>
+    <table id="rentedCarsTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Car</th>
+          <th>Rent Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button id="adminLogoutBtn">Logout</button>
+  </div>
+
+  <script>
+    // Check admin login
+    if(localStorage.getItem('car_rental_logged_in_admin') !== 'true') {
+      alert('Please login as admin first.');
+      window.location.href = 'admin_login.html';
+    }
+
+    const carsKey = 'car_rental_cars';
+    const rentedCarsKey = 'car_rental_rented_cars';
+
+    // Load cars from localStorage or initialize default list
+    let cars = JSON.parse(localStorage.getItem(carsKey)) || [
+      {id: 1, model: 'Toyota Camry', rate: 50, available: true},
+      {id: 2, model: 'Honda Civic', rate: 45, available: true},
+      {id: 3, model: 'Ford Mustang', rate: 70, available: true},
+    ];
+
+    // Save cars to localStorage (helper)
+    function saveCars() {
+      localStorage.setItem(carsKey, JSON.stringify(cars));
+    }
+
+    // Render cars table
+    function renderCars() {
+      const tbody = document.querySelector('#carsTable tbody');
+      tbody.innerHTML = '';
+
+      cars.forEach(car => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>${car.id}</td>
+          <td>${car.model}</td>
+          <td>$${car.rate}</td>
+          <td>${car.available ? 'Available' : 'Rented'}</td>
+          <td>
+            <button ${!car.available ? 'disabled class="disabled-btn"' : ''} data-id="${car.id}" class="removeCarBtn">Remove</button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      // Attach remove listeners
+      document.querySelectorAll('.removeCarBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.getAttribute('data-id'));
+          removeCar(id);
+        });
+      });
+    }
+
+    // Remove car by id (only if available)
+    function removeCar(id) {
+      const index = cars.findIndex(c => c.id === id);
+      if(index === -1) return;
+
+      if(!cars[index].available) {
+        alert('Cannot remove a car that is currently rented.');
+        return;
+      }
+
+      cars.splice(index, 1);
+      saveCars();
+      renderCars();
+    }
+
+    // Add new car
+    const addCarForm = document.getElementById('addCarForm');
+    addCarForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const model = document.getElementById('newCarModel').value.trim();
+      const rate = parseFloat(document.getElementById('newCarRate').value);
+
+      if(!model || isNaN(rate) || rate <= 0) {
+        alert('Please enter valid car model and rate.');
+        return;
+      }
+
+      // Generate new ID (max existing id + 1)
+      const newId = cars.length > 0 ? Math.max(...cars.map(c => c.id)) + 1 : 1;
+
+      cars.push({
+        id: newId,
+        model,
+        rate,
+        available: true
+      });
+
+      saveCars();
+      renderCars();
+
+      addCarForm.reset();
+    });
+
+    // Render rented cars table
+    function renderRentedCars() {
+      const rentedCars = JSON.parse(localStorage.getItem(rentedCarsKey)) || [];
+      const tbody = document.querySelector('#rentedCarsTable tbody');
+      tbody.innerHTML = '';
+
+      if(rentedCars.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3">No cars currently rented.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      rentedCars.forEach(rent => {
+        const car = cars.find(c => c.id === rent.carId);
+        if(!car) return; // just in case
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${rent.username}</td>
+          <td>${car.model}</td>
+          <td>${rent.rentDate}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Logout
+    document.getElementById('adminLogoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('car_rental_logged_in_admin');
+      window.location.href = 'admin_login.html';
+    });
+
+    // Initial render
+    renderCars();
+    renderRentedCars();
+  </script>
+</body>
+</html>

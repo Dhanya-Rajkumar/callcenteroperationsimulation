@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Terms and Conditions</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Terms and Conditions</h2>
+    <p>
+      Please read the terms and conditions carefully before renting a car.
+    </p>
+    <ul>
+      <li>The renter must have a valid driving license.</li>
+      <li>Cars must be returned on time and in good condition.</li>
+      <li>The renter is responsible for any damages.</li>
+      <li>Rent is charged per day as listed.</li>
+      <li>Late returns may incur additional fees.</li>
+      <!-- Add more as needed -->
+    </ul>
+    <button id="agreeBtn">I Agree and Rent</button>
+    <button id="cancelBtn">Cancel</button>
+  </div>
+
+<script src="script.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const carName = params.get('car');
+const currentUser = localStorage.getItem('currentUser');
+
+if(!currentUser) {
+  alert('Please login first');
+  window.location.href = 'user_login.html';
+}
+
+document.getElementById('agreeBtn').onclick = function() {
+  if(!carName) {
+    alert('Invalid car selection.');
+    window.location.href = 'customer_dashboard.html';
+    return;
+  }
+
+  let rentals = JSON.parse(localStorage.getItem('rentals')) || [];
+  if(rentals.find(r => r.carName === carName)) {
+    alert('Car already rented!');
+    window.location.href = 'customer_dashboard.html';
+    return;
+  }
+
+  rentals.push({ carName, username: currentUser });
+  localStorage.setItem('rentals', JSON.stringify(rentals));
+  alert(`You have successfully rented ${carName}!`);
+  window.location.href = 'customer_dashboard.html';
+};
+
+document.getElementById('cancelBtn').onclick = function() {
+  window.location.href = 'customer_dashboard.html';
+};
+</script>
+</body>
+</html>

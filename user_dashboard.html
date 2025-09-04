@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Dashboard - Car Rental Management System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+  </nav>
+
+  <div class="container">
+    <h2>User Dashboard</h2>
+    <div id="welcomeMsg"></div>
+
+    <h3>Available Cars for Rent</h3>
+    <table id="availableCarsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Model</th>
+          <th>Rate ($/day)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Terms & Conditions</h3>
+    <p class="terms-text">
+      By renting a car, you agree to return it in the same condition. You are responsible for any damage or fines. Rental payment is due upfront.
+    </p>
+    <label><input type="checkbox" id="agreeTerms" /> I agree to the terms and conditions</label>
+
+    <h3>Your Rented Cars</h3>
+    <table id="userRentedCarsTable">
+      <thead>
+        <tr>
+          <th>Car Model</th>
+          <th>Rent Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button id="userLogoutBtn">Logout</button>
+  </div>
+
+  <script>
+    const username = localStorage.getItem('car_rental_logged_in_user');
+    if(!username) {
+      alert('Please login first.');
+      window.location.href = 'user_login.html';
+    }
+
+    const carsKey = 'car_rental_cars';
+    const rentedCarsKey = 'car_rental_rented_cars';
+
+    document.getElementById('welcomeMsg').innerText = `Welcome, ${username}!`;
+
+    // Load cars
+    let cars = JSON.parse(localStorage.getItem(carsKey)) || [];
+
+    // Load rented cars
+    let rentedCars = JSON.parse(localStorage.getItem(rentedCarsKey)) || [];
+
+    // Render available cars (only those available)
+    function renderAvailableCars() {
+      const tbody = document.querySelector('#availableCarsTable tbody');
+      tbody.innerHTML = '';
+
+      const availableCars = cars.filter(c => c.available);
+
+      if(availableCars.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="4">No cars available at the moment.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      availableCars.forEach(car => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${car.id}</td>
+          <td>${car.model}</td>
+          <td>$${car.rate}</td>
+          <td><button data-id="${car.id}" class="rentCarBtn">Rent</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Add rent event listeners
+      document.querySelectorAll('.rentCarBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          rentCar(parseInt(btn.getAttribute('data-id')));
+        });
+      });
+    }
+
+    // Render user's rented cars
+    function renderUserRentedCars() {
+      const tbody = document.querySelector('#userRentedCarsTable tbody');
+      tbody.innerHTML = '';
+
+      const userRents = rentedCars.filter(r => r.username === username);
+
+      if(userRents.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3">You have not rented any cars.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      userRents.forEach(rent => {
+        const car = cars.find(c => c.id === rent.carId);
+        if(!car) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${car.model}</td>
+          <td>${rent.rentDate}</td>
+          <td><button data-id="${rent.carId}" class="returnCarBtn">Return</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Add return event listeners
+      document.querySelectorAll('.returnCarBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          returnCar(parseInt(btn.getAttribute('data-id')));
+        });
+      });
+    }
+
+    // Rent car
+    function rentCar(carId) {
+      const agreed = document.getElementById('agreeTerms').checked;
+      if(!agreed) {
+        alert('You must agree to the terms and conditions before renting.');
+        return;
+      }
+
+      // Check availability again just in case
+      const carIndex = cars.findIndex(c => c.id === carId);
+      if(carIndex === -1 || !cars[carIndex].available) {
+        alert('Car not available');
+        renderAvailableCars();
+        return;
+      }
+
+      // Mark car rented
+      cars[carIndex].available = false;
+      saveCars();
+
+      // Add to rentedCars list
+      rentedCars.push({
+        username,
+        carId,
+        rentDate: new Date().toLocaleDateString(),
+      });
+      localStorage.setItem(rentedCarsKey, JSON.stringify(rentedCars));
+
+      alert(`You have successfully rented the ${cars[carIndex].model}`);
+      renderAvailableCars();
+      renderUserRentedCars();
+    }
+
+    // Return car
+    function returnCar(carId) {
+      // Find rented record for this user and car
+      const rentIndex = rentedCars.findIndex(r => r.username === username && r.carId === carId);
+      if(rentIndex === -1) {
+        alert('You have not rented this car.');
+        return;
+      }
+
+      // Remove from rentedCars
+      rentedCars.splice(rentIndex, 1);
+      localStorage.setItem(rentedCarsKey, JSON.stringify(rentedCars));
+
+      // Mark car available
+      const carIndex = cars.findIndex(c => c.id === carId);
+      if(carIndex !== -1) {
+        cars[carIndex].available = true;
+        saveCars();
+      }
+
+      alert('Car returned successfully.');
+      renderAvailableCars();
+      renderUserRentedCars();
+    }
+
+    // Save cars to localStorage (helper)
+    function saveCars() {
+      localStorage.setItem(carsKey, JSON.stringify(cars));
+    }
+
+    // Logout
+    document.getElementById('userLogoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('car_rental_logged_in_user');
+      window.location.href = 'user_login.html';
+    });
+
+    // Initial render
+    renderAvailableCars();
+    renderUserRentedCars();
+  </script>
+</body>
+</html>

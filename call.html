@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Call Center Operation Simulation</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f4f8;
+      margin: 0; padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      background: white;
+      max-width: 600px;
+      width: 100%;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #004a99;
+    }
+    .menu {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .output {
+      margin-top: 20px;
+      min-height: 150px;
+      background: #e9f0fe;
+      border-radius: 8px;
+      padding: 15px;
+      white-space: pre-line;
+      font-family: monospace;
+      color: #222;
+    }
+    input[type="text"] {
+      padding: 10px;
+      width: calc(100% - 22px);
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Call Center Operation Simulation</h1>
+
+  <div class="menu">
+    <input type="text" id="callerName" placeholder="Enter caller name" />
+    <button id="addCallBtn">Add Call to Queue</button>
+    <button id="processCallBtn">Process Next Call</button>
+    <button id="viewQueueBtn">View Call Queue</button>
+    <button id="clearQueueBtn" style="background:#dc3545;">Clear Call Queue</button>
+  </div>
+
+  <div class="output" id="outputArea">Call center ready. Add calls to start.</div>
+</div>
+
+<script>
+  const queue = [];
+  const outputArea = document.getElementById('outputArea');
+  const callerInput = document.getElementById('callerName');
+
+  function updateOutput(text) {
+    outputArea.textContent = text;
+  }
+
+  document.getElementById('addCallBtn').addEventListener('click', () => {
+    const caller = callerInput.value.trim();
+    if(!caller) {
+      alert('Please enter caller name');
+      return;
+    }
+    queue.push(caller);
+    updateOutput(`Call from "${caller}" added to the queue.\nQueue length: ${queue.length}`);
+    callerInput.value = '';
+    callerInput.focus();
+  });
+
+  document.getElementById('processCallBtn').addEventListener('click', () => {
+    if(queue.length === 0) {
+      updateOutput('No calls in queue to process.');
+      return;
+    }
+    const caller = queue.shift();
+    updateOutput(`Processing call from "${caller}".\nCalls remaining in queue: ${queue.length}`);
+  });
+
+  document.getElementById('viewQueueBtn').addEventListener('click', () => {
+    if(queue.length === 0) {
+      updateOutput('Call queue is empty.');
+      return;
+    }
+    const list = queue.map((c, i) => `${i+1}. ${c}`).join('\n');
+    updateOutput(`Current Call Queue (${queue.length}):\n${list}`);
+  });
+
+  document.getElementById('clearQueueBtn').addEventListener('click', () => {
+    if(queue.length === 0) {
+      updateOutput('Queue is already empty.');
+      return;
+    }
+    if(confirm('Are you sure you want to clear the entire call queue?')) {
+      queue.length = 0;
+      updateOutput('Call queue cleared.');
+    }
+  });
+</script>
+
+</body>
+</html>
